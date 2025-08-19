@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Погладь котёнка ❤️</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Comic Sans MS', cursive, sans-serif;
+      background: #fffef6;
+      text-align: center;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: auto; /* ← нормальный курсор на первом этапе */
+    }
+
+    /* --- Курсор-маяк (в хорроре) --- */
+    #cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #0f0;
+      border-radius: 50%;
+      background: rgba(0, 255, 0, 0.2);
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1000;
+      mix-blend-mode: screen;
+      box-shadow: 0 0 10px #0f0;
+      display: none; /* ← скрыт на первом этапе */
+    }
+
+    /* --- Кото-режим --- */
+    #kitty-container {
+      max-width: 300px;
+      cursor: pointer;
+    }
+
+    #kitty-img {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 20px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+      #kitty-img:hover {
+        transform: scale(1.05);
+      }
+
+    #kitty-text {
+      font-size: 1.4em;
+      color: #555;
+      margin: 20px 0 5px;
+      font-weight: bold;
+    }
+
+    #kitty-subtext {
+      font-size: 0.9em;
+      color: #888;
+      font-style: italic;
+    }
+
+    /* --- Попап --- */
+    #permission-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none; /* ← скрыт по умолчанию */
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      z-index: 2000;
+    }
+
+    .popup-content {
+      background: #111;
+      border: 1px solid #0f0;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 400px;
+      box-shadow: 0 0 20px #0f0;
+    }
+
+      .popup-content h2 {
+        color: #0f0;
+        margin-bottom: 15px;
+      }
+
+      .popup-content ul {
+        list-style: none;
+        margin: 15px 0;
+        padding: 0;
+        text-align: left;
+      }
+
+      .popup-content li {
+        color: #fff;
+        margin: 8px 0;
+        font-size: 1.1em;
+      }
+
+    #grant-perms {
+      background: #0f0;
+      color: #000;
+      border: none;
+      padding: 12px 24px;
+      font-size: 1.1em;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 15px;
+    }
+
+    /* --- Хоррор --- */
+    body.horror-active {
+      background: #000;
+      color: #f00;
+      font-family: 'Impact', sans-serif;
+      user-select: none;
+      cursor: none;
+    }
+
+      body.horror-active #cursor {
+        display: block;
+      }
+
+    #blood-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    #flash {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    #crack {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><path d="M200 100 Q300 50 400 100 T600 100 Q700 150 650 250 T600 400 Q550 500 400 450 T200 400 Q100 350 150 250 T200 100" fill="none" stroke="red" stroke-width="2" stroke-dasharray="5,5"/></svg>') no-repeat center;
+      background-size: 100%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 998;
+    }
+
+    #qr-container {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #qr-code {
+      width: 200px;
+      height: 200px;
+      border: 3px solid #f00;
+      box-shadow: 0 0 30px red;
+      animation: pulse 0.8s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from {
+        opacity: 0.3;
+        transform: scale(1);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1.05);
+      }
+    }
+
+    @keyframes shakeScreen {
+      0%,100% {
+        transform: translateX(0);
+      }
+
+      10% {
+        transform: translateX(-10px);
+      }
+
+      30% {
+        transform: translateX(10px);
+      }
+
+      50% {
+        transform: translateX(-10px);
+      }
+
+      70% {
+        transform: translateX(10px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Курсор -->
+  <div id="cursor"></div>
+
+  <!-- Кот -->
+  <div id="kitty-container">
+    <img id="kitty-img" src="images/kitty.png" alt="Милый котёнок" />
+    <p id="kitty-text">Погладь меня… я одинок ❤️</p>
+    <p id="kitty-subtext">Коснись или кликни</p>
+  </div>
+
+  <!-- Попап -->
+  <div id="permission-popup">
+    <div class="popup-content">
+      <h2>Пожалуйста, помоги сайту</h2>
+      <p style="color:#fff;">Чтобы показать тебе кое-что важное, нужно:</p>
+      <ul>
+        <li>🔊 Разрешить микрофон</li>
+        <li>🔊 Включить звук (громкость > 50%)</li>
+      </ul>
+      <button id="grant-perms">Разрешить и продолжить</button>
+      <p style="color:#555; font-size:0.8em; margin-top:10px;">Без этого — ты не увидишь истину.</p>
+    </div>
+  </div>
+
+  <!-- Хоррор -->
+  <div id="horror-mode" style="display:none">
+    <canvas id="blood-canvas"></canvas>
+    <div id="flash"></div>
+    <div id="crack"></div>
+    <div id="qr-container"><img id="qr-code" src="images/code.jpg" alt="Сканируй. Оно ждёт." /></div>
+  </div>
+
+  <!-- Аудио -->
+  <audio id="scream" src="audios/scream1.mp3" preload="auto"></audio>
+  <audio id="heartbeat" src="audios/heartbeat.mp3" preload="auto" loop></audio>
+  <audio id="footsteps" src="audios/footsteps.mp3" preload="auto"></audio>
+
+  <script>
+    (() => {
+      const cursor = document.getElementById('cursor');
+      const kittyContainer = document.getElementById('kitty-container');
+      const popup = document.getElementById('permission-popup');
+      const grantBtn = document.getElementById('grant-perms');
+      const horrorMode = document.getElementById('horror-mode');
+      const bloodCanvas = document.getElementById('blood-canvas');
+      const ctx = bloodCanvas.getContext('2d');
+      const flash = document.getElementById('flash');
+      const crack = document.getElementById('crack');
+      const qrContainer = document.getElementById('qr-container');
+      const scream = document.getElementById('scream');
+      const heartbeat = document.getElementById('heartbeat');
+      const footsteps = document.getElementById('footsteps');
+
+      let horrorActive = false, touchCount = 0, blood = [];
+
+      // курсор-маяк
+      document.addEventListener('mousemove', e => {
+        cursor.style.left = e.clientX + 'px';
+        cursor.style.top = e.clientY + 'px';
+      });
+
+      // клик по котику → попап
+      kittyContainer.addEventListener('click', () => {
+        if (!horrorActive) popup.style.display = 'flex';
+      });
+
+      // кнопка
+      grantBtn.addEventListener('click', async () => {
+        try {
+          await navigator.mediaDevices.getUserMedia({ audio: true });
+          popup.style.display = 'none';
+          activateHorror();
+        } catch {
+          alert('Разреши микрофон.');
+        }
+      });
+
+      function activateHorror() {
+        if (horrorActive) return;
+        horrorActive = true;
+        document.body.classList.add('horror-active');
+        kittyContainer.remove();
+        horrorMode.style.display = 'block';
+        bloodCanvas.width = innerWidth;
+        bloodCanvas.height = innerHeight;
+
+        scream.play();
+        flash.style.opacity = '0.7';
+        setTimeout(() => flash.style.opacity = '0', 300);
+        document.body.style.animation = 'shakeScreen 0.6s';
+        setTimeout(() => document.body.style.animation = '', 1200);
+
+        heartbeat.play().catch(() => { });
+
+        setInterval(() => {
+          footsteps.play();
+          document.body.style.animation = 'shakeScreen 0.5s';
+          setTimeout(() => document.body.style.animation = '', 500);
+        }, 7000);
+
+        // кровавый текст + кровь
+        drawBloodText("ОНО СМОТРИТ", 100, () => {
+          setTimeout(() => {
+            ctx.clearRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+            spreadBlood();
+            setTimeout(() => {
+              drawBloodText("ОНО ЗНАЕТ, ГДЕ ТЫ ЖИВЁШЬ", innerHeight / 2, null, 3);
+            }, 3000);
+          }, 2000);
+        });
+
+        // crack
+        setTimeout(() => {
+          crack.style.opacity = '0.7';
+          flash.style.opacity = '0.4';
+          setTimeout(() => {
+            flash.style.opacity = '0';
+            crack.style.opacity = '0.3';
+          }, 300);
+        }, 4000);
+
+        // QR после 22 кликов
+        document.addEventListener('click', increment);
+        document.addEventListener('touchstart', increment);
+      }
+
+      function increment() {
+        touchCount++;
+        if (touchCount >= 22) {
+          qrContainer.style.opacity = '1';
+          qrContainer.style.pointerEvents = 'auto';
+          document.removeEventListener('click', increment);
+        }
+      }
+
+      function drawBloodText(text, y, callback, size = 1) {
+        ctx.clearRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+        ctx.font = `${40 * size}px Impact`;
+        ctx.textAlign = 'center';
+        const x = bloodCanvas.width / 2;
+        const letters = text.split('');
+        let offset = 0;
+        letters.forEach((letter, i) => {
+          setTimeout(() => {
+            ctx.fillStyle = `rgba(139,0,0,${0.8 + Math.random() * 0.2})`;
+            ctx.fillText(letter, x + offset, y);
+            offset += ctx.measureText(letter).width;
+            if (i === letters.length - 1 && callback) callback();
+          }, i * 150);
+        });
+      }
+
+      function spreadBlood() {
+        for (let i = 0; i < 200; i++) {
+          blood.push({
+            x: Math.random() * bloodCanvas.width,
+            y: Math.random() * bloodCanvas.height,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            life: 1
+          });
+        }
+        animateBlood();
+      }
+
+      function animateBlood() {
+        ctx.clearRect(0, 0, bloodCanvas.width, bloodCanvas.height);
+        blood.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          p.vx *= 0.98; p.vy *= 0.98;
+          p.life -= 0.005;
+          ctx.fillStyle = `rgba(139,0,0,${p.life})`;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 2, 0, Math.PI * 2); ctx.fill();
+        });
+        blood = blood.filter(p => p.life > 0);
+        if (blood.length > 0) requestAnimationFrame(animateBlood);
+      }
+    })();
+  </script>
+</body>
+</html>
